@@ -27,6 +27,14 @@
     "jwt",
     "express"
   ],
-  "author": "ProGalaxy E-Labs",
-  "license": "MIT"
+  "author": "ProGalaxy E-Labs <info@progalaxyelabs.com> (https://www.progalaxyelabs.com)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/progalaxyelabs/stonescriptphp-files.git"
+  },
+  "homepage": "https://github.com/progalaxyelabs/stonescriptphp-files#readme",
+  "bugs": {
+    "url": "https://github.com/progalaxyelabs/stonescriptphp-files/issues"
+  }
 }
