@@ -1,0 +1,32 @@
+{
+  "name": "@progalaxyelabs/stonescriptphp-files",
+  "version": "1.0.0",
+  "description": "Shared file server for ProGalaxy E-Labs platforms — Azure Blob Storage + JWT auth",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "peerDependencies": {
+    "express": "^5.0.0"
+  },
+  "dependencies": {
+    "@azure/storage-blob": "^12.24.0",
+    "multer": "^1.4.5-lts.1",
+    "jsonwebtoken": "^9.0.2",
+    "cors": "^2.8.5",
+    "uuid": "^11.0.5"
+  },
+  "keywords": [
+    "azure",
+    "blob-storage",
+    "file-upload",
+    "jwt",
+    "express"
+  ],
+  "author": "ProGalaxy E-Labs",
+  "license": "MIT"
+}
