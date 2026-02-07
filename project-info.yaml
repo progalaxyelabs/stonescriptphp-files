@@ -1,0 +1,120 @@
+# project-info.yaml
+# Human-readable project metadata and configuration
+
+# REQUIRED FIELDS
+# ===============
+
+# Project code in format: XXXX-NNN
+project_code: "STON-003"
+
+# Project name (matches directory name)
+name: "stonescriptphp-files"
+
+# Project type: platform | interconnected | standalone
+type: "standalone"
+
+# Project status: production | active-dev | staging | maintenance | paused | archived | planning | unknown
+status: "production"
+
+
+# BASIC METADATA
+# ==============
+
+# Human-readable project title
+title: "@progalaxyelabs/stonescriptphp-files"
+
+# Brief project description
+description: "Shared file server package for Express + Azure Blob Storage + JWT auth. Used by all 11 platform files/ services."
+
+# Project version (semantic versioning recommended)
+version: "1.0.0"
+
+# Creation date (ISO 8601 format: YYYY-MM-DD)
+created: "2026-02-07"
+
+# Last modified date (ISO 8601 format: YYYY-MM-DD)
+last_modified: "2026-02-07"
+
+
+# BUSINESS CLASSIFICATION
+# =======================
+
+# Domain category
+domain: "tools"
+
+# Project purpose: product | client-project | internal-tool | poc | experiment | library | marketing | unknown
+purpose: "library"
+
+# Business model: b2b-saas | b2c-saas | b2b-one-off | b2c-one-off | marketplace | internal | unknown
+business_model: "internal"
+
+# Ownership: progalaxy | client | partner | open-source | unknown
+ownership: "open-source"
+
+# Revenue priority: p0-critical | p1-high | p2-medium | p3-low | p4-none | unknown
+revenue_priority: "p4-none"
+
+
+# TECHNICAL DETAILS
+# =================
+
+# Primary technology stack
+tech_stack:
+  language: "JavaScript (ESM)"
+  runtime: "Node.js >= 24"
+  framework: "Express 5 (peerDependency)"
+  storage: "Azure Blob Storage"
+  auth: "JWT (RS256/ES256/HS256)"
+
+# Key dependencies
+dependencies:
+  - "@azure/storage-blob"
+  - "multer"
+  - "jsonwebtoken"
+  - "cors"
+  - "uuid"
+
+# Deployment tier: tier-0-static | tier-1-simple | tier-2-database | tier-3-services | tier-4-distributed | library | unknown
+deployment_tier: "library"
+
+
+# GIT & REPOSITORY
+# ================
+
+repository:
+  type: "git"
+  url: "git@github.com:progalaxyelabs/stonescriptphp-files.git"
+  branch: "main"
+
+# Package registry
+npm:
+  name: "@progalaxyelabs/stonescriptphp-files"
+  scope: "progalaxyelabs"
+  access: "public"
+
+
+# CONSUMERS
+# =========
+
+consumers:
+  - "progalaxyelabs-platform/files"
+  - "progalaxy-platform/files"
+  - "btechrecruiter-platform/files"
+  - "instituteapp-platform/files"
+  - "restrantapp-platform/files"
+  - "medstoreapp-platform/files"
+  - "logisticsapp-platform/files"
+  - "specialcomputers-platform/files"
+  - "aasaanwork-platform/files"
+  - "webmeteor-platform/files"
+  - "emcircuitsystems-platform/files"
+
+
+# NOTES
+# =====
+
+notes: |
+  Extracted from identical 638-line inline files services across all 11 platforms.
+  Factory pattern: createFilesServer(config?) with env var defaults.
+  Platforms reference via file: protocol locally, npm in production.
+  HLD stored in work-management DB (Project 183, HLD ID 7) and in HLD.md.
