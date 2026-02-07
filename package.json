@@ -1,7 +1,7 @@
 {
   "name": "@progalaxyelabs/stonescriptphp-files",
-  "version": "1.0.0",
-  "description": "Shared file server for ProGalaxy E-Labs platforms — Azure Blob Storage + JWT auth",
+  "version": "1.0.1",
+  "description": "Zero-config Express file server with Azure Blob Storage and JWT authentication",
   "type": "module",
   "main": "src/index.js",
   "exports": {

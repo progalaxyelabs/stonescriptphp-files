@@ -24,7 +24,7 @@ status: "production"
 title: "@progalaxyelabs/stonescriptphp-files"
 
 # Brief project description
-description: "Shared file server package for Express + Azure Blob Storage + JWT auth. Used by all 11 platform files/ services."
+description: "Zero-config Express file server with Azure Blob Storage and JWT authentication"
 
 # Project version (semantic versioning recommended)
 version: "1.0.0"
@@ -114,7 +114,6 @@ consumers:
 # =====
 
 notes: |
-  Extracted from identical 638-line inline files services across all 11 platforms.
   Factory pattern: createFilesServer(config?) with env var defaults.
-  Platforms reference via file: protocol locally, npm in production.
-  HLD stored in work-management DB (Project 183, HLD ID 7) and in HLD.md.
+  Composable exports for advanced usage.
+  HLD in HLD.md.

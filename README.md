@@ -1,6 +1,6 @@
 # @progalaxyelabs/stonescriptphp-files
 
-Shared file server for ProGalaxy E-Labs platforms — Azure Blob Storage + JWT auth
+Zero-config Express file server with Azure Blob Storage and JWT authentication
 
 ## Installation
 
