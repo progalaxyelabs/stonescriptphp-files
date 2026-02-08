@@ -41,21 +41,30 @@ export function createUploadRouter(storage, maxFileSize = 100 * 1024 * 1024) {
       }
 
       const userId = req.user.id;
+      const tenantId = req.user.tenantId;
       const { buffer, originalname, mimetype } = req.file;
 
       // Upload to Azure Blob Storage
-      const fileMetadata = await storage.uploadFile(userId, buffer, originalname, mimetype);
+      const fileMetadata = await storage.uploadFile(tenantId, userId, buffer, originalname, mimetype);
+
+      // Build response
+      const fileResponse = {
+        id: fileMetadata.fileId,
+        name: fileMetadata.originalFilename,
+        contentType: fileMetadata.contentType,
+        size: fileMetadata.size,
+        uploadedAt: fileMetadata.uploadedAt
+      };
+
+      // Include tenantId in response if present
+      if (tenantId) {
+        fileResponse.tenantId = tenantId;
+      }
 
       // Return success response
       res.status(201).json({
         success: true,
-        file: {
-          id: fileMetadata.fileId,
-          name: fileMetadata.originalFilename,
-          contentType: fileMetadata.contentType,
-          size: fileMetadata.size,
-          uploadedAt: fileMetadata.uploadedAt
-        }
+        file: fileResponse
       });
     } catch (error) {
       console.error('Upload error:', error);

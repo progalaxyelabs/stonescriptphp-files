@@ -42,21 +42,23 @@ export class AzureStorageClient {
 
   /**
    * Upload file to Azure Blob Storage
+   * @param {string} tenantId - Tenant ID (for multi-tenant namespacing)
    * @param {string} userId - User ID (for namespacing)
    * @param {Buffer} fileBuffer - File content
    * @param {string} originalFilename - Original filename
    * @param {string} contentType - MIME type
    * @returns {Object} File metadata
    */
-  async uploadFile(userId, fileBuffer, originalFilename, contentType) {
+  async uploadFile(tenantId, userId, fileBuffer, originalFilename, contentType) {
     if (!this.containerClient) {
       throw new Error('Azure Storage not initialized');
     }
 
-    // Generate unique blob name: {user_id}/{uuid}.{ext}
+    // Generate unique blob name with tenant prefix: {tenant_id}/{user_id}/{uuid}.{ext}
     const fileId = uuidv4();
     const extension = originalFilename.split('.').pop();
-    const blobName = `${userId}/${fileId}.${extension}`;
+    const prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
+    const blobName = `${prefix}${fileId}.${extension}`;
 
     const blockBlobClient = this.containerClient.getBlockBlobClient(blobName);
 
@@ -66,6 +68,7 @@ export class AzureStorageClient {
         blobContentType: contentType
       },
       metadata: {
+        tenant_id: tenantId || '',
         user_id: userId,
         original_filename: originalFilename,
         content_type: contentType,
@@ -77,6 +80,7 @@ export class AzureStorageClient {
     return {
       fileId,
       blobName,
+      tenantId,
       userId,
       originalFilename,
       contentType,
@@ -88,17 +92,19 @@ export class AzureStorageClient {
   /**
    * Download file from Azure Blob Storage
    * @param {string} fileId - File ID (UUID)
+   * @param {string} tenantId - Tenant ID (for multi-tenant namespacing)
    * @param {string} userId - User ID (for authorization)
    * @returns {Object} { stream, metadata }
    */
-  async downloadFile(fileId, userId) {
+  async downloadFile(fileId, tenantId, userId) {
     if (!this.containerClient) {
       throw new Error('Azure Storage not initialized');
     }
 
-    // List blobs with file_id metadata to find the blob
+    // List blobs with prefix to find the blob
+    const prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
     const blobs = this.containerClient.listBlobsFlat({
-      prefix: `${userId}/`,
+      prefix,
       includeMetadata: true
     });
 
@@ -130,17 +136,19 @@ export class AzureStorageClient {
 
   /**
    * List user's files
+   * @param {string} tenantId - Tenant ID (for multi-tenant namespacing)
    * @param {string} userId - User ID
    * @returns {Array} List of file metadata
    */
-  async listFiles(userId) {
+  async listFiles(tenantId, userId) {
     if (!this.containerClient) {
       throw new Error('Azure Storage not initialized');
     }
 
     const files = [];
+    const prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
     const blobs = this.containerClient.listBlobsFlat({
-      prefix: `${userId}/`,
+      prefix,
       includeMetadata: true
     });
 
@@ -162,16 +170,18 @@ export class AzureStorageClient {
   /**
    * Delete file from Azure Blob Storage
    * @param {string} fileId - File ID (UUID)
+   * @param {string} tenantId - Tenant ID (for multi-tenant namespacing)
    * @param {string} userId - User ID (for authorization)
    */
-  async deleteFile(fileId, userId) {
+  async deleteFile(fileId, tenantId, userId) {
     if (!this.containerClient) {
       throw new Error('Azure Storage not initialized');
     }
 
     // Find blob by file_id
+    const prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
     const blobs = this.containerClient.listBlobsFlat({
-      prefix: `${userId}/`,
+      prefix,
       includeMetadata: true
     });
 

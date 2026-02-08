@@ -17,9 +17,10 @@ export function createListRouter(storage) {
   router.get('/files', async (req, res) => {
     try {
       const userId = req.user.id;
+      const tenantId = req.user.tenantId;
 
       // List files for current user
-      const files = await storage.listFiles(userId);
+      const files = await storage.listFiles(tenantId, userId);
 
       res.status(200).json({
         success: true,

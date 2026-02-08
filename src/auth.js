@@ -41,9 +41,13 @@ export function createAuthMiddleware(publicKey) {
         });
       }
 
+      // Extract tenant_id from token
+      const tenantId = decoded.tenant_id || decoded.tid || decoded.tenant_uuid || null;
+
       // Attach user info to request
       req.user = {
         id: userId,
+        tenantId,
         email: decoded.email,
         roles: decoded.roles || [],
         ...decoded
@@ -52,6 +56,85 @@ export function createAuthMiddleware(publicKey) {
       next();
     } catch (error) {
       console.error('JWT validation error:', error.message);
+
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Token expired'
+        });
+      }
+
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Invalid token'
+        });
+      }
+
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Token validation failed'
+      });
+    }
+  };
+}
+
+/**
+ * JWKS-based JWT validation middleware factory
+ * Creates a middleware that validates JWT tokens using JWKS (JSON Web Key Sets)
+ *
+ * @param {JwksClient} jwksClient - JWKS client instance for key retrieval
+ * @returns {Function} Express middleware function
+ */
+export function createJwksAuthMiddleware(jwksClient) {
+  if (!jwksClient) {
+    throw new Error('JWKS client is required');
+  }
+
+  return async function authenticateJwks(req, res, next) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Missing or invalid authorization header'
+      });
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+    try {
+      // Get signing key from JWKS
+      const { key, algorithm } = await jwksClient.getSigningKey(token);
+
+      // Verify token with the retrieved key
+      const decoded = jwt.verify(token, key, { algorithms: [algorithm] });
+
+      // Extract user_id from token
+      const userId = decoded.sub || decoded.user_id || decoded.userId || decoded.id;
+
+      if (!userId) {
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Token missing user identifier'
+        });
+      }
+
+      // Extract tenant_id from token
+      const tenantId = decoded.tenant_id || decoded.tid || decoded.tenant_uuid || null;
+
+      // Attach user info to request
+      req.user = {
+        id: userId,
+        tenantId,
+        email: decoded.email,
+        roles: decoded.roles || [],
+        ...decoded
+      };
+
+      next();
+    } catch (error) {
+      console.error('JWKS JWT validation error:', error.message);
 
       if (error.name === 'TokenExpiredError') {
         return res.status(401).json({

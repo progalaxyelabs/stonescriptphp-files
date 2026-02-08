@@ -1,12 +1,44 @@
 import express from 'express';
 import cors from 'cors';
 import { AzureStorageClient } from './azure-storage.js';
-import { createAuthMiddleware } from './auth.js';
+import { createAuthMiddleware, createJwksAuthMiddleware } from './auth.js';
+import { JwksClient } from './jwks-client.js';
+import { createRateLimiters } from './rate-limit.js';
 import { createUploadRouter } from './routes/upload.js';
 import { createDownloadRouter } from './routes/download.js';
 import { createListRouter } from './routes/list.js';
 import { createDeleteRouter } from './routes/delete.js';
 import { createHealthRouter } from './routes/health.js';
+
+/**
+ * Resolve the authentication middleware based on configuration priority.
+ * Priority: authServers > jwksUrl > jwtPublicKey
+ *
+ * @param {Object} config - Configuration options
+ * @returns {Function} Express middleware function for authentication
+ */
+function resolveAuthMiddleware(config) {
+  const authServersJson = config.authServers || (process.env.AUTH_SERVERS ? JSON.parse(process.env.AUTH_SERVERS) : null);
+  const jwksUrl = config.jwksUrl || process.env.JWKS_URL;
+  const jwtPublicKey = config.jwtPublicKey || process.env.JWT_PUBLIC_KEY;
+  const cacheTtl = config.jwksCacheTtl || parseInt(process.env.JWKS_CACHE_TTL) || 3600;
+
+  if (authServersJson) {
+    const jwksClient = new JwksClient(authServersJson.map(s => ({ ...s, cacheTtl })));
+    return createJwksAuthMiddleware(jwksClient);
+  }
+
+  if (jwksUrl) {
+    const jwksClient = new JwksClient([{ issuer: '*', jwksUrl, cacheTtl }]);
+    return createJwksAuthMiddleware(jwksClient);
+  }
+
+  if (jwtPublicKey) {
+    return createAuthMiddleware(jwtPublicKey);
+  }
+
+  throw new Error('No authentication method configured. Set AUTH_SERVERS, JWKS_URL, or JWT_PUBLIC_KEY.');
+}
 
 /**
  * Create a configured files server
@@ -15,23 +47,33 @@ import { createHealthRouter } from './routes/health.js';
  * @param {string} config.containerName - Azure container name (default: process.env.AZURE_CONTAINER_NAME || 'platform-files')
  * @param {string} config.azureConnectionString - Azure storage connection string (default: process.env.AZURE_STORAGE_CONNECTION_STRING)
  * @param {string} config.jwtPublicKey - JWT public key for auth (default: process.env.JWT_PUBLIC_KEY)
+ * @param {Array} config.authServers - Array of auth server configs [{issuer, jwksUrl, cacheTtl?}]
+ * @param {string} config.jwksUrl - Single JWKS URL for key retrieval
+ * @param {number} config.jwksCacheTtl - JWKS cache TTL in seconds (default: 3600)
+ * @param {boolean} config.tenantScoped - Enable tenant-scoped file isolation (default: true)
  * @param {number} config.maxFileSize - Max file size in bytes (default: 100MB)
  * @param {string|string[]} config.corsOrigins - CORS allowed origins (default: '*')
+ * @param {number} config.rateLimitWindowMs - Rate limit window in ms (default: 60000)
+ * @param {number} config.rateLimitUpload - Max uploads per window (default: 10)
+ * @param {number} config.rateLimitDownload - Max downloads per window (default: 60)
  * @returns {Object} Server object with app, storage, and listen() method
  */
 export function createFilesServer(config = {}) {
   const port = config.port || process.env.PORT || 3000;
   const containerName = config.containerName || process.env.AZURE_CONTAINER_NAME || 'platform-files';
   const connectionString = config.azureConnectionString || process.env.AZURE_STORAGE_CONNECTION_STRING;
-  const jwtPublicKey = config.jwtPublicKey || process.env.JWT_PUBLIC_KEY;
   const maxFileSize = config.maxFileSize || 100 * 1024 * 1024;
   const corsOrigins = config.corsOrigins || '*';
+  const tenantScoped = config.tenantScoped !== undefined ? config.tenantScoped : (process.env.TENANT_SCOPED !== 'false');
 
   // Create storage client
   const storage = new AzureStorageClient(connectionString, containerName);
 
-  // Create auth middleware
-  const authenticate = createAuthMiddleware(jwtPublicKey);
+  // Resolve auth middleware based on config priority
+  const authenticate = resolveAuthMiddleware(config);
+
+  // Create rate limiters
+  const { uploadLimiter, downloadLimiter } = createRateLimiters(config);
 
   // Create Express app
   const app = express();
@@ -49,12 +91,12 @@ export function createFilesServer(config = {}) {
     next();
   });
 
-  // Routes
+  // Routes with rate limiters
   app.use(createHealthRouter());
-  app.use(authenticate, createUploadRouter(storage, maxFileSize));
-  app.use(authenticate, createDownloadRouter(storage));
-  app.use(authenticate, createListRouter(storage));
-  app.use(authenticate, createDeleteRouter(storage));
+  app.use(authenticate, uploadLimiter, createUploadRouter(storage, maxFileSize));
+  app.use(authenticate, downloadLimiter, createDownloadRouter(storage));
+  app.use(authenticate, downloadLimiter, createListRouter(storage));
+  app.use(authenticate, downloadLimiter, createDeleteRouter(storage));
 
   // 404 handler
   app.use((req, res) => {
@@ -106,7 +148,9 @@ export function createFilesServer(config = {}) {
 
 // Named exports for advanced/composable usage
 export { AzureStorageClient } from './azure-storage.js';
-export { createAuthMiddleware } from './auth.js';
+export { createAuthMiddleware, createJwksAuthMiddleware } from './auth.js';
+export { JwksClient } from './jwks-client.js';
+export { createRateLimiters } from './rate-limit.js';
 export { createUploadRouter } from './routes/upload.js';
 export { createDownloadRouter } from './routes/download.js';
 export { createListRouter } from './routes/list.js';

@@ -18,6 +18,7 @@ export function createDeleteRouter(storage) {
     try {
       const fileId = req.params.id;
       const userId = req.user.id;
+      const tenantId = req.user.tenantId;
 
       // Validate file ID format (UUID)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,7 +30,7 @@ export function createDeleteRouter(storage) {
       }
 
       // Delete file from Azure (validates ownership)
-      await storage.deleteFile(fileId, userId);
+      await storage.deleteFile(fileId, tenantId, userId);
 
       res.status(200).json({
         success: true,
