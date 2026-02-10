@@ -1,6 +1,6 @@
 {
   "name": "@progalaxyelabs/stonescriptphp-files",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Zero-config Express file server with Azure Blob Storage and JWT authentication",
   "type": "module",
   "main": "src/index.js",
