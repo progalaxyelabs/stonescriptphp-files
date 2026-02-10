@@ -28,10 +28,8 @@ export class AzureStorageClient {
       // Get container client
       this.containerClient = this.blobServiceClient.getContainerClient(this.containerName);
 
-      // Create container if it doesn't exist
-      await this.containerClient.createIfNotExists({
-        access: 'private' // CRITICAL: No public access
-      });
+      // Create container if it doesn't exist (no access property = private, no public access)
+      await this.containerClient.createIfNotExists();
 
       console.log(`Azure Blob Storage initialized: container=${this.containerName}`);
     } catch (error) {
