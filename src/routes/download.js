@@ -67,6 +67,13 @@ export function createDownloadRouter(storage) {
         });
       }
 
+      if (error.statusCode === 503) {
+        return res.status(503).json({
+          error: 'Service Unavailable',
+          message: error.message
+        });
+      }
+
       res.status(500).json({
         error: 'Internal Server Error',
         message: 'Failed to download file'

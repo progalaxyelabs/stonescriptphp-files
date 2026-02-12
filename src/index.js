@@ -13,6 +13,7 @@ import { createHealthRouter } from './routes/health.js';
 /**
  * Resolve the authentication middleware based on configuration priority.
  * Priority: authServers > jwksUrl > jwtPublicKey
+ * If no auth is configured, returns a pass-through middleware that logs a warning.
  *
  * @param {Object} config - Configuration options
  * @returns {Function} Express middleware function for authentication
@@ -37,7 +38,14 @@ function resolveAuthMiddleware(config) {
     return createAuthMiddleware(jwtPublicKey);
   }
 
-  throw new Error('No authentication method configured. Set AUTH_SERVERS, JWKS_URL, or JWT_PUBLIC_KEY.');
+  // No auth configured - return pass-through middleware with warning
+  console.warn('⚠️  No authentication configured — all endpoints will fail with 503');
+  return (req, res, next) => {
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Authentication not configured'
+    });
+  };
 }
 
 /**

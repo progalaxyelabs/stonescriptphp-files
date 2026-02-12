@@ -7,20 +7,22 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export class AzureStorageClient {
   constructor(connectionString, containerName = 'platform-files') {
-    if (!connectionString) {
-      throw new Error('Azure Storage connection string is required');
-    }
-
     this.connectionString = connectionString;
     this.containerName = containerName;
     this.blobServiceClient = null;
     this.containerClient = null;
+    this.isConfigured = !!connectionString;
   }
 
   /**
    * Initialize Azure Blob Storage client
    */
   async initialize() {
+    if (!this.isConfigured) {
+      console.warn('⚠️  AZURE_STORAGE_CONNECTION_STRING not set — file uploads will fail');
+      return;
+    }
+
     try {
       // Create BlobServiceClient
       this.blobServiceClient = BlobServiceClient.fromConnectionString(this.connectionString);
@@ -48,6 +50,12 @@ export class AzureStorageClient {
    * @returns {Object} File metadata
    */
   async uploadFile(tenantId, userId, fileBuffer, originalFilename, contentType) {
+    if (!this.isConfigured) {
+      const error = new Error('Storage not configured');
+      error.statusCode = 503;
+      throw error;
+    }
+
     if (!this.containerClient) {
       throw new Error('Azure Storage not initialized');
     }
@@ -95,6 +103,12 @@ export class AzureStorageClient {
    * @returns {Object} { stream, metadata }
    */
   async downloadFile(fileId, tenantId, userId) {
+    if (!this.isConfigured) {
+      const error = new Error('Storage not configured');
+      error.statusCode = 503;
+      throw error;
+    }
+
     if (!this.containerClient) {
       throw new Error('Azure Storage not initialized');
     }
@@ -139,6 +153,12 @@ export class AzureStorageClient {
    * @returns {Array} List of file metadata
    */
   async listFiles(tenantId, userId) {
+    if (!this.isConfigured) {
+      const error = new Error('Storage not configured');
+      error.statusCode = 503;
+      throw error;
+    }
+
     if (!this.containerClient) {
       throw new Error('Azure Storage not initialized');
     }
@@ -172,6 +192,12 @@ export class AzureStorageClient {
    * @param {string} userId - User ID (for authorization)
    */
   async deleteFile(fileId, tenantId, userId) {
+    if (!this.isConfigured) {
+      const error = new Error('Storage not configured');
+      error.statusCode = 503;
+      throw error;
+    }
+
     if (!this.containerClient) {
       throw new Error('Azure Storage not initialized');
     }
