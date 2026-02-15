@@ -73,13 +73,14 @@ export function createAuthorizationMiddleware(authorizationUrl, timeout = 3000) 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorBody = await response.json().catch(() => ({}));
+        const errorRaw = await response.json().catch(() => ({}));
+        const errorBody = errorRaw.data || errorRaw;
 
         if (response.status === 403) {
-          console.warn(`Authorization denied: user=${req.user?.id} action=${action} reason=${errorBody.reason || 'unknown'}`);
+          console.warn(`Authorization denied: user=${req.user?.id} action=${action} reason=${errorBody.reason || errorRaw.message || 'unknown'}`);
           return res.status(403).json({
             error: 'Forbidden',
-            message: errorBody.reason || 'Access denied'
+            message: errorBody.reason || errorRaw.message || 'Access denied'
           });
         }
 
@@ -90,7 +91,9 @@ export function createAuthorizationMiddleware(authorizationUrl, timeout = 3000) 
         });
       }
 
-      const authResult = await response.json();
+      const raw = await response.json();
+      // Unwrap StoneScriptPHP {status, message, data} wrapper if present
+      const authResult = raw.data || raw;
 
       if (!authResult.allowed) {
         console.warn(`Authorization denied: user=${req.user?.id} action=${action} reason=${authResult.reason || 'unknown'}`);
