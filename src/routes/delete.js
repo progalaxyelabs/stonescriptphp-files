@@ -19,6 +19,7 @@ export function createDeleteRouter(storage) {
       const fileId = req.params.id;
       const userId = req.user.id;
       const tenantId = req.user.tenantId;
+      const scope = req.fileScope || 'user';
 
       // Validate file ID format (UUID)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,8 +30,8 @@ export function createDeleteRouter(storage) {
         });
       }
 
-      // Delete file from Azure (validates ownership)
-      await storage.deleteFile(fileId, tenantId, userId);
+      // Delete file from Azure (validates ownership for user-scoped files)
+      await storage.deleteFile(fileId, tenantId, userId, scope);
 
       res.status(200).json({
         success: true,

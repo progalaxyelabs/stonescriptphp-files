@@ -42,10 +42,11 @@ export function createUploadRouter(storage, maxFileSize = 100 * 1024 * 1024) {
 
       const userId = req.user.id;
       const tenantId = req.user.tenantId;
+      const scope = req.fileScope || 'user';
       const { buffer, originalname, mimetype } = req.file;
 
       // Upload to Azure Blob Storage
-      const fileMetadata = await storage.uploadFile(tenantId, userId, buffer, originalname, mimetype);
+      const fileMetadata = await storage.uploadFile(tenantId, userId, buffer, originalname, mimetype, scope);
 
       // Build response
       const fileResponse = {

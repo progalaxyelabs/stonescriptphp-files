@@ -3,6 +3,7 @@ import cors from 'cors';
 import { AzureStorageClient } from './azure-storage.js';
 import { createAuthMiddleware, createJwksAuthMiddleware } from './auth.js';
 import { JwksClient } from './jwks-client.js';
+import { createAuthorizationMiddleware } from './authorization.js';
 import { createRateLimiters } from './rate-limit.js';
 import { createUploadRouter } from './routes/upload.js';
 import { createDownloadRouter } from './routes/download.js';
@@ -59,6 +60,8 @@ function resolveAuthMiddleware(config) {
  * @param {string} config.jwksUrl - Single JWKS URL for key retrieval
  * @param {number} config.jwksCacheTtl - JWKS cache TTL in seconds (default: 3600)
  * @param {boolean} config.tenantScoped - Enable tenant-scoped file isolation (default: true)
+ * @param {string} config.authorizationUrl - URL for authorization checks (default: process.env.AUTHORIZATION_URL). When set, files service calls this URL before upload/download/delete.
+ * @param {number} config.authorizationTimeout - Authorization request timeout in ms (default: 3000)
  * @param {number} config.maxFileSize - Max file size in bytes (default: 100MB)
  * @param {string|string[]} config.corsOrigins - CORS allowed origins (default: '*')
  * @param {number} config.rateLimitWindowMs - Rate limit window in ms (default: 60000)
@@ -80,6 +83,11 @@ export function createFilesServer(config = {}) {
   // Resolve auth middleware based on config priority
   const authenticate = resolveAuthMiddleware(config);
 
+  // Resolve authorization middleware (optional — no-op when URL not set)
+  const authorizationUrl = config.authorizationUrl || process.env.AUTHORIZATION_URL || null;
+  const authorizationTimeout = config.authorizationTimeout || parseInt(process.env.AUTHORIZATION_TIMEOUT) || 3000;
+  const authorize = createAuthorizationMiddleware(authorizationUrl, authorizationTimeout);
+
   // Create rate limiters
   const { uploadLimiter, downloadLimiter } = createRateLimiters(config);
 
@@ -99,12 +107,12 @@ export function createFilesServer(config = {}) {
     next();
   });
 
-  // Routes with rate limiters
+  // Routes with rate limiters and optional authorization
   app.use(createHealthRouter());
-  app.use(authenticate, uploadLimiter, createUploadRouter(storage, maxFileSize));
-  app.use(authenticate, downloadLimiter, createDownloadRouter(storage));
+  app.use(authenticate, authorize, uploadLimiter, createUploadRouter(storage, maxFileSize));
+  app.use(authenticate, authorize, downloadLimiter, createDownloadRouter(storage));
   app.use(authenticate, downloadLimiter, createListRouter(storage));
-  app.use(authenticate, downloadLimiter, createDeleteRouter(storage));
+  app.use(authenticate, authorize, downloadLimiter, createDeleteRouter(storage));
 
   // 404 handler
   app.use((req, res) => {
@@ -157,6 +165,7 @@ export function createFilesServer(config = {}) {
 // Named exports for advanced/composable usage
 export { AzureStorageClient } from './azure-storage.js';
 export { createAuthMiddleware, createJwksAuthMiddleware } from './auth.js';
+export { createAuthorizationMiddleware } from './authorization.js';
 export { JwksClient } from './jwks-client.js';
 export { createRateLimiters } from './rate-limit.js';
 export { createUploadRouter } from './routes/upload.js';

@@ -19,6 +19,7 @@ export function createDownloadRouter(storage) {
       const fileId = req.params.id;
       const userId = req.user.id;
       const tenantId = req.user.tenantId;
+      const scope = req.fileScope || 'user';
 
       // Validate file ID format (UUID)
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,8 +30,8 @@ export function createDownloadRouter(storage) {
         });
       }
 
-      // Download file from Azure (validates ownership)
-      const { stream, metadata } = await storage.downloadFile(fileId, tenantId, userId);
+      // Download file from Azure (validates ownership for user-scoped files)
+      const { stream, metadata } = await storage.downloadFile(fileId, tenantId, userId, scope);
 
       // Set response headers
       res.setHeader('Content-Type', metadata.contentType);

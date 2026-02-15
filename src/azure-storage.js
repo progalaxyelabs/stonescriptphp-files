@@ -47,9 +47,10 @@ export class AzureStorageClient {
    * @param {Buffer} fileBuffer - File content
    * @param {string} originalFilename - Original filename
    * @param {string} contentType - MIME type
+   * @param {string} scope - Storage scope: 'user' (default) or 'tenant'
    * @returns {Object} File metadata
    */
-  async uploadFile(tenantId, userId, fileBuffer, originalFilename, contentType) {
+  async uploadFile(tenantId, userId, fileBuffer, originalFilename, contentType, scope = 'user') {
     if (!this.isConfigured) {
       const error = new Error('Storage not configured');
       error.statusCode = 503;
@@ -60,10 +61,15 @@ export class AzureStorageClient {
       throw new Error('Azure Storage not initialized');
     }
 
-    // Generate unique blob name with tenant prefix: {tenant_id}/{user_id}/{uuid}.{ext}
+    // Generate unique blob name with scope-based prefix
     const fileId = uuidv4();
     const extension = originalFilename.split('.').pop();
-    const prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
+    let prefix;
+    if (scope === 'tenant') {
+      prefix = tenantId ? `${tenantId}/shared/` : 'shared/';
+    } else {
+      prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
+    }
     const blobName = `${prefix}${fileId}.${extension}`;
 
     const blockBlobClient = this.containerClient.getBlockBlobClient(blobName);
@@ -79,7 +85,8 @@ export class AzureStorageClient {
         original_filename: originalFilename,
         content_type: contentType,
         uploaded_at: new Date().toISOString(),
-        file_id: fileId
+        file_id: fileId,
+        scope: scope
       }
     });
 
@@ -100,9 +107,10 @@ export class AzureStorageClient {
    * @param {string} fileId - File ID (UUID)
    * @param {string} tenantId - Tenant ID (for multi-tenant namespacing)
    * @param {string} userId - User ID (for authorization)
+   * @param {string} scope - Storage scope: 'user' (default) or 'tenant'
    * @returns {Object} { stream, metadata }
    */
-  async downloadFile(fileId, tenantId, userId) {
+  async downloadFile(fileId, tenantId, userId, scope = 'user') {
     if (!this.isConfigured) {
       const error = new Error('Storage not configured');
       error.statusCode = 503;
@@ -113,8 +121,14 @@ export class AzureStorageClient {
       throw new Error('Azure Storage not initialized');
     }
 
-    // List blobs with prefix to find the blob
-    const prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
+    // Build prefix based on scope
+    let prefix;
+    if (scope === 'tenant') {
+      prefix = tenantId ? `${tenantId}/shared/` : 'shared/';
+    } else {
+      prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
+    }
+
     const blobs = this.containerClient.listBlobsFlat({
       prefix,
       includeMetadata: true
@@ -124,8 +138,9 @@ export class AzureStorageClient {
       if (blob.metadata && blob.metadata.file_id === fileId) {
         const blockBlobClient = this.containerClient.getBlockBlobClient(blob.name);
 
-        // Verify ownership
-        if (blob.metadata.user_id !== userId) {
+        // Verify ownership for user-scoped files only
+        // Tenant-scoped files are shared — authorization middleware already checked access
+        if (scope === 'user' && blob.metadata.user_id !== userId) {
           throw new Error('Unauthorized: File belongs to different user');
         }
 
@@ -150,9 +165,10 @@ export class AzureStorageClient {
    * List user's files
    * @param {string} tenantId - Tenant ID (for multi-tenant namespacing)
    * @param {string} userId - User ID
+   * @param {string} scope - Storage scope: 'user' (default) or 'tenant'
    * @returns {Array} List of file metadata
    */
-  async listFiles(tenantId, userId) {
+  async listFiles(tenantId, userId, scope = 'user') {
     if (!this.isConfigured) {
       const error = new Error('Storage not configured');
       error.statusCode = 503;
@@ -164,7 +180,12 @@ export class AzureStorageClient {
     }
 
     const files = [];
-    const prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
+    let prefix;
+    if (scope === 'tenant') {
+      prefix = tenantId ? `${tenantId}/shared/` : 'shared/';
+    } else {
+      prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
+    }
     const blobs = this.containerClient.listBlobsFlat({
       prefix,
       includeMetadata: true
@@ -190,8 +211,9 @@ export class AzureStorageClient {
    * @param {string} fileId - File ID (UUID)
    * @param {string} tenantId - Tenant ID (for multi-tenant namespacing)
    * @param {string} userId - User ID (for authorization)
+   * @param {string} scope - Storage scope: 'user' (default) or 'tenant'
    */
-  async deleteFile(fileId, tenantId, userId) {
+  async deleteFile(fileId, tenantId, userId, scope = 'user') {
     if (!this.isConfigured) {
       const error = new Error('Storage not configured');
       error.statusCode = 503;
@@ -202,8 +224,14 @@ export class AzureStorageClient {
       throw new Error('Azure Storage not initialized');
     }
 
-    // Find blob by file_id
-    const prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
+    // Find blob by file_id with scope-based prefix
+    let prefix;
+    if (scope === 'tenant') {
+      prefix = tenantId ? `${tenantId}/shared/` : 'shared/';
+    } else {
+      prefix = tenantId ? `${tenantId}/${userId}/` : `${userId}/`;
+    }
+
     const blobs = this.containerClient.listBlobsFlat({
       prefix,
       includeMetadata: true
@@ -211,8 +239,8 @@ export class AzureStorageClient {
 
     for await (const blob of blobs) {
       if (blob.metadata && blob.metadata.file_id === fileId) {
-        // Verify ownership
-        if (blob.metadata.user_id !== userId) {
+        // Verify ownership for user-scoped files only
+        if (scope === 'user' && blob.metadata.user_id !== userId) {
           throw new Error('Unauthorized: File belongs to different user');
         }
 
