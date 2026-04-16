@@ -1,6 +1,6 @@
 {
   "name": "@progalaxyelabs/stonescriptphp-files",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Zero-config Express file server with Azure Blob Storage and JWT authentication",
   "type": "module",
   "main": "src/index.js",
@@ -9,6 +9,9 @@
   },
   "engines": {
     "node": ">=24.0.0"
+  },
+  "scripts": {
+    "test": "node --test test/**/*.test.js"
   },
   "peerDependencies": {
     "express": "^5.0.0"
@@ -26,7 +29,8 @@
     "blob-storage",
     "file-upload",
     "jwt",
-    "express"
+    "express",
+    "stonescriptphp"
   ],
   "author": "ProGalaxy E-Labs <info@progalaxyelabs.com> (https://www.progalaxyelabs.com)",
   "license": "MIT",
