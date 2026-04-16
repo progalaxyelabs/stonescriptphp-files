@@ -11,7 +11,7 @@
 
 /**
  * Create authorization middleware
- * @param {string|null} authorizationUrl - URL to call for auth checks (e.g., "http://api:9100/files/authorize")
+ * @param {string|null} authorizationUrl - URL to call for auth checks (e.g., "http://your-api/files/authorize")
  * @param {number} timeout - Request timeout in ms (default: 3000)
  * @returns {Function} Express middleware
  */

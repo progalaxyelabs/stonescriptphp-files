@@ -42,7 +42,7 @@ createFilesServer().listen();
 ```js
 createFilesServer({
   port: process.env.PORT || 3000,
-  containerName: process.env.AZURE_CONTAINER_NAME || 'platform-files',
+  containerName: process.env.AZURE_CONTAINER_NAME || 'files',
   azureConnectionString: process.env.AZURE_STORAGE_CONNECTION_STRING,
   jwtPublicKey: process.env.JWT_PUBLIC_KEY,
   maxFileSize: 100 * 1024 * 1024,  // 100MB default
@@ -92,7 +92,7 @@ Main export. Creates and returns a configured Express app with all routes, middl
 Wraps `@azure/storage-blob` SDK. Methods: `initialize()`, `uploadFile(userId, buffer, filename, contentType)`, `downloadFile(fileId, userId)`, `listFiles(userId)`, `deleteFile(fileId, userId)`. Auto-creates container on init with private access.
 
 ### createAuthMiddleware (middleware factory)
-Express middleware factory. Validates Bearer token, extracts user identity from standard JWT claims (`sub`, `user_id`, `userId`, `id`), attaches to `req.user`. Supports RS256/ES256/HS256.
+Express middleware factory. Validates Bearer token, extracts user identity from standard JWT claims (`sub`, `user_id`, `userId`, `id`), attaches to `req.user`. Supports RS256/ES256 (asymmetric algorithms only).
 
 ### Route handlers (router factories)
 Express Router factory functions for upload, download, list, delete, health. Can be used individually for custom mounting or composed via `createFilesServer`.
@@ -119,7 +119,7 @@ Express Router factory functions for upload, download, list, delete, health. Can
 
 ## JWT Authentication
 
-- **Algorithms:** RS256, ES256, HS256
+- **Algorithms:** RS256, ES256
 - **Token source:** `Authorization: Bearer <token>` header
 - **User ID extraction:** `sub` | `user_id` | `userId` | `id` claim
 - **Ownership:** files are scoped to the authenticated user's ID
@@ -131,7 +131,7 @@ Express Router factory functions for upload, download, list, delete, health. Can
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `AZURE_STORAGE_CONNECTION_STRING` | Yes | — | Azure Storage connection string |
-| `AZURE_CONTAINER_NAME` | No | `platform-files` | Blob container name |
+| `AZURE_CONTAINER_NAME` | No | `files` | Blob container name |
 | `JWT_PUBLIC_KEY` | Yes | — | Public key for JWT verification |
 | `PORT` | No | `3000` | Server listen port |
 
@@ -164,7 +164,7 @@ Express Router factory functions for upload, download, list, delete, health. Can
 
 ## Constraints
 
-- Must work with any JWT issuer (RS256/ES256/HS256)
+- Must work with any JWT issuer (RS256/ES256)
 - No breaking changes to Docker environment variables
 - Published to npm as `@progalaxyelabs/stonescriptphp-files` (scoped, public)
 - Source: https://github.com/progalaxyelabs/stonescriptphp-files

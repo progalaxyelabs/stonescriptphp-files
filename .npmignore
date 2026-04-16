@@ -10,3 +10,4 @@ node_modules/
 coverage/
 project-info.yaml
 HLD.md
+test/

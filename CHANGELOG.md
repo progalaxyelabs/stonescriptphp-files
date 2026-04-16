@@ -47,8 +47,9 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   `RS256` and `ES256`. Tokens signed with `HS256` or `alg=none` are rejected
   with HTTP 401 before signature verification is attempted.
 
-  *Migration:* Re-sign tokens with RS256 or ES256. `HS256` was already documented
-  as "not recommended" — no standard StoneScriptPHP auth server issues HS256 tokens.
+  *Migration:* Re-sign tokens with RS256 or ES256. Asymmetric algorithms are
+  required for proper public-key verification; symmetric `HS256` does not fit
+  the public-key auth model this library is designed for.
 
 - **`AzureStorageClient` methods** accept an optional `blobPrefix` final parameter.
   When supplied, it overrides the computed `tenantId/userId/scope` prefix.

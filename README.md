@@ -21,9 +21,9 @@ createFilesServer().listen();
 
 ```bash
 AZURE_STORAGE_CONNECTION_STRING=your_connection_string
-AZURE_CONTAINER_NAME=platform-files  # optional, defaults to 'platform-files'
+BLOB_CONTAINER=my-files         # optional, defaults to 'files'
 JWT_PUBLIC_KEY=your_jwt_public_key
-PORT=3000  # optional, defaults to 3000
+PORT=3000                       # optional, defaults to 3000
 ```
 
 ## Advanced Configuration
@@ -101,7 +101,7 @@ app.listen(3000);
 ## Features
 
 - ✅ Azure Blob Storage integration
-- ✅ JWT Bearer token authentication (RS256/ES256/HS256)
+- ✅ JWT Bearer token authentication (RS256/ES256)
 - ✅ File ownership validation
 - ✅ Streaming uploads and downloads
 - ✅ Configurable file size limits
